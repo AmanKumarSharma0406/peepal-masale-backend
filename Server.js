@@ -5,7 +5,7 @@ const path = require("path");
 require("dotenv").config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 10000;
 
 // middleware
 app.use(cors());
@@ -19,8 +19,13 @@ app.get("/", (req, res) => {
   res.send("Peepal Masale Backend Running ✅");
 });
 
+console.log("RENDER MONGO URI:", process.env.MONGO_URI);
 // MongoDB connect
-mongoose.connect("mongodb://127.0.0.1:27017/peepal_masale")
+if (!process.env.MONGO_URI) {
+  console.error("❌ MONGO_URI is missing");
+  process.exit(1);
+}
+mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("MongoDB connected ✅"))
   .catch(err => console.error("Mongo error ❌", err));
 
