@@ -34,6 +34,20 @@ router.get("/", async (req, res) => {
   const orders = await Order.find().sort({ createdAt: -1 });
   res.json(orders);
 });
+// CUSTOMER TRACK ORDER BY ORDER ID
+router.get("/track/:orderId", async (req, res) => {
+  try {
+    const order = await Order.findOne({ orderId: req.params.orderId });
+
+    if(!order){
+      return res.json({ error: "Order not found" });
+    }
+
+    res.json(order);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 module.exports = router;
 // UPDATE ORDER STATUS
