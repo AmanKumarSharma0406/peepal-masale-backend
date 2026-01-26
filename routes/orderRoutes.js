@@ -2,26 +2,31 @@ const express = require("express");
 const router = express.Router();
 const Order = require("../models/Order");
 
+// ============================
+// ORDER ID GENERATOR
+// ============================
 function generateOrderId() {
   return "PM-" + Math.floor(100000 + Math.random() * 900000);
 }
 
-// CREATE ORDER
+// ============================
+// CREATE ORDER (CUSTOMER)
+// ============================
 router.post("/", async (req, res) => {
   try {
     const orderId = generateOrderId();
 
     const order = new Order({
       ...req.body,
-      orderId
+      orderId,
+      status: "Pending"
     });
 
     await order.save();
 
-    // 👇 FRONTEND KO ORDER ID BHEJ RAHE HAIN
     res.json({
       success: true,
-      orderId: orderId
+      orderId
     });
 
   } catch (err) {
@@ -29,18 +34,33 @@ router.post("/", async (req, res) => {
   }
 });
 
-// ADMIN GET ORDERS
+// ============================
+// GET ORDERS (ADMIN + CUSTOMER)
+// 👉 admin: all orders
+// 👉 customer: ?phone=XXXXXXXXXX
+// ============================
 router.get("/", async (req, res) => {
-  const orders = await Order.find().sort({ createdAt: -1 });
-  res.json(orders);
+  try {
+    const { phone } = req.query;
+
+    const filter = phone ? { phone } : {};
+    const orders = await Order.find(filter).sort({ createdAt: -1 });
+
+    res.json(orders);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
-// CUSTOMER TRACK ORDER BY ORDER ID
+
+// ============================
+// TRACK SINGLE ORDER (BY ORDER ID)
+// ============================
 router.get("/track/:orderId", async (req, res) => {
   try {
     const order = await Order.findOne({ orderId: req.params.orderId });
 
-    if(!order){
-      return res.json({ error: "Order not found" });
+    if (!order) {
+      return res.status(404).json({ error: "Order not found" });
     }
 
     res.json(order);
@@ -49,19 +69,24 @@ router.get("/track/:orderId", async (req, res) => {
   }
 });
 
-module.exports = router;
-// UPDATE ORDER STATUS
+// ============================
+// UPDATE ORDER STATUS (ADMIN)
+// ============================
 router.put("/:id/status", async (req, res) => {
   try {
     await Order.findByIdAndUpdate(req.params.id, {
       status: req.body.status
     });
+
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
-// DELETE ORDER
+
+// ============================
+// DELETE ORDER (ADMIN)
+// ============================
 router.delete("/:id", async (req, res) => {
   try {
     await Order.findByIdAndDelete(req.params.id);
@@ -70,3 +95,5 @@ router.delete("/:id", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+module.exports = router;
